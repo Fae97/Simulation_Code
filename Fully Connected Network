@@ -131,7 +131,7 @@ high_narcissistic_proportions = []
 low_narcissistic_proportions = []
 
 # Simulation settings
-num_runs = 1
+num_runs = 50
 
 # Open a file to write the output to
 with open('output.txt', 'w') as f:
