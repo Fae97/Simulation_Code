@@ -3,7 +3,6 @@ import simpy
 import sys
 import numpy as np
 
-
 # Class for storing statistics of the agents
 
 class Statistics:
