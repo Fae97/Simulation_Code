@@ -1,0 +1,195 @@
+import random
+import simpy
+import networkx as nx
+import numpy as np
+import sys
+
+
+class Statistics:
+    def __init__(self):
+        self.games_played = 0
+        self.strategy_changes = 0
+        self.strategies = []
+
+    def update_games_played(self):
+        self.games_played += 1
+
+    def update_strategy_changes(self):
+        self.strategy_changes += 1
+
+class Agent:
+    def __init__(self, env, name, fairness_perception, adaptability, social_network):
+        self.social_network = social_network
+        self.env = env
+        self.name = name
+        self.fairness_perception = fairness_perception
+        #print(f"{self.name} has {self.fairness_perception} fairness perception")
+        self.adaptability = adaptability
+        self.reputation = 0
+        self.claims = []
+        self.money = 0
+        self.earnings = 0
+        self.consecutive_losses = 0
+        self.highest_winning_claim = 0
+        self.statistics = Statistics()
+
+        if self.adaptability == "high":
+            self.strategy_change_prob = 0.8
+        else:
+            self.strategy_change_prob = 0.2
+        self.action = env.process(self.play())
+
+    def make_claim(self):
+        if self.fairness_perception == "moderate_player":
+            claim = random.randint(49, 51)
+        elif self.fairness_perception == "high_narcissistic":
+            claim = random.randint(50, 100)
+        else:
+            claim = random.randint(0, 50)
+        self.claims.append(claim)
+        return claim
+
+    def update_reputation(self):
+        if self.claims:
+            self.reputation = sum(self.claims) / len(self.claims)
+        else:
+            self.reputation = 0  # Default reputation value when there are no claims
+
+    def copy_strategy(self):
+        if self.consecutive_losses >= 5:
+            if random.uniform(0, 1) <= self.strategy_change_prob:
+                for agent in agents:
+                    agent.average_money = agent.money / agent.statistics.games_played if agent.statistics.games_played > 0 else 0
+                more_successful_agents = [agent for agent in agents if
+                                          agent.average_money > self.average_money]
+
+                if more_successful_agents:
+                    successful_agent = random.choice(more_successful_agents)
+                    self.fairness_perception = successful_agent.fairness_perception
+                    self.consecutive_losses = 0
+
+                self.statistics.strategies.append(self.fairness_perception)
+                self.statistics.update_strategy_changes()
+
+    def update_money(self, claim):
+        self.money += claim
+        if claim > self.highest_winning_claim:
+            self.highest_winning_claim = claim
+
+    def play(self):
+        while True:
+            # Select opponent from the agent's social network
+            opponent_index = random.choice(self.social_network)
+            opponent = agents[opponent_index]
+
+            if opponent != self:
+                claim1 = self.make_claim()
+                claim2 = opponent.make_claim()
+                self.statistics.update_games_played()
+                if claim1 + claim2 <= 100:
+                    self.update_money(claim1)
+                    opponent.update_money(claim2)
+                else:
+                    self.consecutive_losses += 1
+                    opponent.consecutive_losses += 1
+                self.update_reputation()
+                opponent.update_reputation()
+                self.copy_strategy()
+                opponent.copy_strategy()
+                self.earnings += claim1
+                yield self.env.timeout(1)
+                for i, agent in enumerate(agents):
+                    money[i].append(agent.money)
+                    strategy[i].append(agent.statistics.strategy_changes)
+
+
+proportions = []
+high_narcissistic_proportions = []
+low_narcissistic_proportions = []
+num_runs = 50
+# Generate Barabasi-Albert network
+seed_value = 1
+num_nodes = 100
+num_edges = 2
+G = nx.barabasi_albert_graph(num_nodes, num_edges, seed=seed_value)
+seed_value += 1
+
+# Find top 20% high-degree nodes
+top_percentage = 0.2
+num_top_nodes = int(num_nodes * top_percentage)
+sorted_nodes = sorted(G.degree, key=lambda x: x[1], reverse=True)
+top_nodes = [node[0] for node in sorted_nodes[:num_top_nodes]]
+
+desired_num_moderate_players = 2
+desired_num_high_narcissistic = 49
+desired_num_low_narcissistic = 49
+
+
+num_remaining_nodes = num_nodes - num_top_nodes
+num_moderate_players = desired_num_moderate_players
+num_high_narcissistic = desired_num_high_narcissistic
+num_low_narcissistic = desired_num_low_narcissistic
+
+
+with open('output.txt', 'w') as f:
+    sys.stdout = f
+
+    seed_value = 1
+
+    for i in range(num_runs):
+        env = simpy.Environment()
+        random.seed(seed_value)
+        np.random.seed(seed_value)
+
+        seed_value += 1
+
+# Set fairness perception list based on the top_nodes
+
+        fairness_perception_list = []
+        remaining_nodes = [i for i in range(num_nodes) if i not in top_nodes]
+        random.shuffle(remaining_nodes)
+
+        for i in range(num_nodes):
+            if i in top_nodes:
+                fairness_perception_list.append("high_narcissistic")
+
+        fairness_perception_list.extend(["moderate_player"] * num_moderate_players)
+        fairness_perception_list.extend(["high_narcissistic"] * num_high_narcissistic)
+        fairness_perception_list.extend(["low_narcissistic"] * num_low_narcissistic)
+
+        random.shuffle(fairness_perception_list)
+
+        adaptability_list = [random.choice(["high", "low"]) for _ in range(100)]
+
+        agents = [Agent(env, f'Agent {i}', fairness_perception, adaptability, list(G.neighbors(i))) for
+                  i, (fairness_perception, adaptability)
+                  in enumerate(zip(fairness_perception_list, adaptability_list))]
+
+
+        money = [[] for _ in range(100)]
+        strategy = [[] for _ in range(100)]
+
+        env.run(until=5000)
+
+        moderate_proportion = sum([1 for agent in agents if agent.fairness_perception == "moderate_player"]) / len(agents)
+        high_narcissistic_proportion = sum(
+            [1 for agent in agents if agent.fairness_perception == "high_narcissistic"]) / len(agents)
+        low_narcissistic_proportion = sum(
+            [1 for agent in agents if agent.fairness_perception == "low_narcissistic"]) / len(agents)
+        proportions.append(moderate_proportion)
+        high_narcissistic_proportions.append(high_narcissistic_proportion)
+        low_narcissistic_proportions.append(low_narcissistic_proportion)
+
+        print(f"moderate proportion for run {i + 1}: {moderate_proportion}")
+        print(f"High Narcissistic proportion for run {i + 1}: {high_narcissistic_proportion}")
+        print(f"Low Narcissistic proportion for run {i + 1}: {low_narcissistic_proportion}")
+
+    mean_moderate_proportion = sum(proportions) / len(proportions)
+    print(f"Mean moderate proportion over {num_runs} runs: {mean_moderate_proportion}")
+    mean_high_narcissistic_proportion = sum(high_narcissistic_proportions) / len(high_narcissistic_proportions)
+    print(f"Mean high narcissistic proportion over {num_runs} runs: {mean_high_narcissistic_proportion}")
+    mean_low_narcissistic_proportion = sum(low_narcissistic_proportions) / len(low_narcissistic_proportions)
+    print(f"Mean low narcissistic proportion over {num_runs} runs: {mean_low_narcissistic_proportion}")
+
+    sys.stdout = sys.__stdout__
+
