@@ -23,7 +23,6 @@ class Agent:
         self.env = env
         self.name = name
         self.fairness_perception = fairness_perception
-        #print(f"{self.name} has {self.fairness_perception} fairness perception")
         self.adaptability = adaptability
         self.reputation = 0
         self.claims = []
@@ -53,7 +52,7 @@ class Agent:
         if self.claims:
             self.reputation = sum(self.claims) / len(self.claims)
         else:
-            self.reputation = 0  # Default reputation value when there are no claims
+            self.reputation = 0  
 
     def copy_strategy(self):
         if self.consecutive_losses >= 5:
