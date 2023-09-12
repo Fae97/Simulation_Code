@@ -1,0 +1,194 @@
+import random
+import simpy
+import sys
+import numpy as np
+
+
+# Class for storing statistics of the agents
+
+class Statistics:
+    def __init__(self):
+        self.games_played = 0
+        self.strategy_changes = 0
+        self.strategies = []
+
+    def update_games_played(self):
+        self.games_played += 1
+
+    def update_strategy_changes(self):
+        self.strategy_changes += 1
+
+# Agent class representing individual agents
+
+class Agent:
+    def __init__(self, env, name, fairness_perception, adaptability, agents_list):
+        self.env = env
+        self.name = name
+        self.fairness_perception = fairness_perception
+        self.adaptability = adaptability
+        self.reputation = 0
+        self.claims = []
+        self.money = 0
+        self.earnings = 0
+        self.consecutive_losses = 0
+        self.highest_winning_claim = 0
+        self.statistics = Statistics()
+
+    # Set strategy change probability based on adaptability
+
+        if self.adaptability == "high":
+            self.strategy_change_prob = 0.8
+        else:
+            self.strategy_change_prob = 0.2
+        self.action = env.process(self.play())
+
+
+    # Function to make claims based on fairness perception (I changed agents' claim ranges in different scenarios)
+
+    def make_claim(self):
+        if self.fairness_perception == "moderate_player":
+            claim = random.randint(25, 75)
+        elif self.fairness_perception == "high_narcissistic":
+            claim = random.randint(50, 100)
+        else:
+            claim = random.randint(0, 50)
+        self.claims.append(claim)
+        return claim
+
+    # Function to update the reputation of an agent
+
+    def update_reputation(self):
+        if self.claims:
+            self.reputation = sum(self.claims) / len(self.claims)
+        else:
+            self.reputation = 0  # Default reputation value when there are no claims
+
+
+    # Function to copy the strategy of high performing agents
+
+    def copy_strategy(self):
+        if self.consecutive_losses >= 5:
+            if random.uniform(0, 1) <= self.strategy_change_prob:
+                # Calculate the average money for each agent.
+                for agent in self.agents_list:
+                    agent.average_money = agent.money / agent.statistics.games_played if agent.statistics.games_played > 0 else 0
+
+                # Select agents with a higher average money than the current agent
+                more_successful_agents = [agent for agent in self.agents_list if agent.average_money > self.average_money]
+
+                if more_successful_agents:
+                    # Choose an agent with higher average money randomly and copy their strategy.
+                    successful_agent = random.choice(more_successful_agents)
+                    self.fairness_perception = successful_agent.fairness_perception
+                    self.consecutive_losses = 0
+
+                self.statistics.strategies.append(self.fairness_perception)
+                self.statistics.update_strategy_changes()
+
+    # Function to update the money of an agent
+
+    def update_money(self, claim):
+        self.money += claim
+        if claim > self.highest_winning_claim:
+            self.highest_winning_claim = claim
+
+
+    # Function defining the agent's play behavior
+
+    def play(self):
+        while True:
+            opponent = random.choice(agents)
+            if opponent != self:
+                claim1 = self.make_claim()
+                claim2 = opponent.make_claim()
+
+                self.statistics.update_games_played()
+                if claim1 + claim2 <= 100:
+                    self.update_money(claim1)
+                    opponent.update_money(claim2)
+                    # Reset the count of consecutive losses for both agents
+                    self.consecutive_losses = 0
+                    opponent.consecutive_losses = 0
+                else:
+                    self.consecutive_losses += 1
+                    opponent.consecutive_losses += 1
+
+                self.update_reputation()
+                opponent.update_reputation()
+                self.copy_strategy()
+                opponent.copy_strategy()
+                self.earnings += claim1
+                yield self.env.timeout(1)
+                for i, agent in enumerate(agents):
+                    money[i].append(agent.money)
+                    strategy[i].append(agent.statistics.strategy_changes)
+
+
+# Initialize lists to store proportions
+
+proportions = []
+high_narcissistic_proportions = []
+low_narcissistic_proportions = []
+
+# Simulation settings
+num_runs = 1
+
+# Open a file to write the output to
+with open('output.txt', 'w') as f:
+    # Redirect stdout to the file
+    sys.stdout = f
+
+
+#Initialize the simulation environment
+
+    seed_value = 1
+
+    for i in range(num_runs):
+        env = simpy.Environment()
+        random.seed(seed_value)
+        np.random.seed(seed_value)
+
+        seed_value += 1
+
+        # Define the fairness perceptions and adaptability of agents (I changed the proportions in different scenarios)
+
+        fairness_perception_list = ["high_narcissistic"] * 49 + ["low_narcissistic"] * 49 + ["moderate_player"] * 2
+        adaptability_list = [random.choice(["high", "low"]) for _ in range(100)]
+
+# Create the agents
+
+        agents = [Agent(env, f'Agent {i}', fairness_perception, adaptability, None)
+                  for i, (fairness_perception, adaptability) in
+                  enumerate(zip(fairness_perception_list, adaptability_list))]
+
+        for agent in agents:
+            agent.agents_list = agents
+
+        # Initialize money and strategy lists for tracking
+        money = [[] for _ in range(100)]
+        strategy = [[] for _ in range(100)]
+
+        env.run(until=5000)
+
+# Calculate the number of agents with different fairness perceptions
+        moderate_proportion = sum([1 for agent in agents if agent.fairness_perception == "moderate_player"]) / len(agents)
+        high_narcissistic_proportion = sum(
+            [1 for agent in agents if agent.fairness_perception == "high_narcissistic"]) / len(agents)
+        low_narcissistic_proportion = sum(
+            [1 for agent in agents if agent.fairness_perception == "low_narcissistic"]) / len(agents)
+        proportions.append(moderate_proportion)
+        high_narcissistic_proportions.append(high_narcissistic_proportion)
+        low_narcissistic_proportions.append(low_narcissistic_proportion)
+
+        print(f"Moderate proportion for run {i + 1}: {moderate_proportion}")
+        print(f"High Narcissistic proportion for run {i + 1}: {high_narcissistic_proportion}")
+        print(f"Low Narcissistic proportion for run {i + 1}: {low_narcissistic_proportion}")
+
+    mean_moderate_proportion = sum(proportions) / len(proportions)
+    print(f"Mean moderate proportion over {num_runs} runs: {mean_moderate_proportion}")
+    mean_high_narcissistic_proportion = sum(high_narcissistic_proportions) / len(high_narcissistic_proportions)
+    print(f"Mean high narcissistic proportion over {num_runs} runs: {mean_high_narcissistic_proportion}")
+    mean_low_narcissistic_proportion = sum(low_narcissistic_proportions) / len(low_narcissistic_proportions)
+    print(f"Mean low narcissistic proportion over {num_runs} runs: {mean_low_narcissistic_proportion}")
+
+    sys.stdout = sys.__stdout__
