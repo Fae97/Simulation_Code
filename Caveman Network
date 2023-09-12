@@ -118,7 +118,7 @@ def connect_all_cliques(G, num_cliques, size_of_cliques):
 proportions = []
 high_narcissistic_proportions = []
 low_narcissistic_proportions = []
-num_runs = 1
+num_runs = 50
 
 # Generate Caveman network
 num_cliques = 5
